@@ -48,6 +48,14 @@
         (cond   ((= x 0) NIL)
                 ((= x 1) t)
                 (t (odd? (- x 2)))))
+
+>(defun fact(n)
+        (cond   ((= n 0) 1)
+                (t (* n (fact (- n 1))))))
+
+>(defun power(B p)
+        (cond   ((= p 0) 1)
+                (t (* B ()))))
 ```
 
 
