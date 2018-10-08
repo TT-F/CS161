@@ -116,5 +116,26 @@
 	)
 )
 
+;BTREE2LIST, that takes a binary tree TREE as input, and returns a list of atoms
+
+(defun BTREE2LIST(TREE)
+	(cond 
+		((null TREE) NIL)
+		((atom TREE) (list TREE))
+		(t (append (BTREE2LIST (car TREE)) (BTREE2LIST (cdr TREE))))
+	)
+)
 
 
+;IS-SAME, that takes two LISP expressions E1 and E2 whose atoms are all numbers, and checks whether the expressions are identical. 
+
+(defun IS-SAME (E1 E2)
+	(cond 
+		((and (null E1) (null E2)) t)
+		((and (atom E1) (atom E2)) (= E1 E2))
+		((and (listp E1) (listp E2)) 
+			(and (IS-SAME (car E1) (car E2)) (IS-SAME (cdr E1) (cdr E2)))
+		)
+		(t NIL)
+	)
+)
