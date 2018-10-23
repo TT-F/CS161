@@ -422,8 +422,8 @@
 	)
 )
 
-; return the absolute value 
-(defun abs (value)
+; return the abs_valueolute value 
+(defun abs_value (value)
 	(cond
 		((< value 0) (- 0 value))
 		((> value 0) value)
@@ -440,7 +440,7 @@
 			(end_r (first end))
 			(end_c (second end))
 		)
-		(abs (+ (abs (- end_r start_r)) (abs (- end_c start_c))))
+		(abs_value (+ (abs_value (- end_r start_r)) (abs_value (- end_c start_c))))
 	)
 )
 
