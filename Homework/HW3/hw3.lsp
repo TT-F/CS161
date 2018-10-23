@@ -402,6 +402,84 @@
 	)
 )
 
+; helper function for find_ele 
+; finding element on a specific row
+(defun helper_find_ele (row v r c)
+	(cond 
+		((null row) NIL)
+		((= v (first row)) (cons (list r c) (helper_find_ele (rest row) v r (+ c 1))))
+		(t (helper_find_ele (rest row) v r (+ c 1)))
+	)
+)
+
+; helper funciont: find all elemennts' location you want and return it as a list, if there is no such 
+; element, return NIL 
+; s is the state, v is the element you want to find 
+(defun find_ele (s v r c)
+	(cond
+		((null s) NIL)
+		(t (append (helper_find_ele (first s) v r 0) (find_ele (rest s) v (+ r 1) 0)))
+	)
+)
+
+; return the absolute value 
+(defun abs (value)
+	(cond
+		((< value 0) (- 0 value))
+		((> value 0) value)
+		(t 0)
+	)
+)
+
+; calculate teh manhattan distance between two points 
+(defun manhattan_distance (start end)
+	(let 
+		(
+			(start_r (first start))
+			(start_c (second start))
+			(end_r (first end))
+			(end_c (second end))
+		)
+		(abs (+ (abs (- end_r start_r)) (abs (- end_c start_c))))
+	)
+)
+
+; find the smallest distance between a box and its goals 
+; box should be a list of a pair of coordinate
+; goals should be a list of list of a pair of coordinate
+(defun smallest_distance_between (box goals curr_smallest_dis)
+	(cond
+		((null goals) curr_smallest_dis)
+		(t 
+			(let*
+				((curr_dist (manhattan_distance box (first goals)))) ; store the distance 
+				(cond
+					((null curr_smallest_dis) (smallest_distance_between box (rest goals) curr_dist)) ; when curr_smallest dis has no value 
+					(t 
+						(cond
+							((<  curr_dist curr_smallest_dis) (smallest_distance_between box (rest goals) curr_dist)) ;if the new distance is smaller than the stored one 
+							(t (smallest_distance_between box (rest goals) curr_smallest_dis)) ; otherwise 
+						)
+					)
+				)
+			)
+		)
+	)
+)
+
+; sum up all smallest distance 
+; boxes and goals should be a list of list of coordiantes 
+(defun sum_smallest_distance (boxes goals)
+	(cond 
+		((null boxes) 0) ; base case for the recursion 
+		(t (+ (smallest_distance_between (first boxes) goals NIL) (sum_smallest_distance (rest boxes) goals))) ;add all smallest distance together 
+		; for every box, check its distance between it and all goals 
+	)
+)
+
+
+
+
 ; EXERCISE: Change the name of this function to h<UID> where
 ; <UID> is your actual student ID number. Then, modify this 
 ; function to compute an admissible heuristic value of s. 
@@ -410,9 +488,10 @@
 ; Objective: make A* solve problems as fast as possible.
 ; The Lisp 'time' function can be used to measure the 
 ; running time of a function call.
-;
+; 
+; This heruristic functions calculate the sum of distance between each box and its nearest goal
 (defun h904801945 (s)
-	
+	(+ (sum_smallest_distance (find_ele s 2 0 0) (find_ele s 4 0 0)))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
