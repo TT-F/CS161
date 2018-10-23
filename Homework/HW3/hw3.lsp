@@ -210,7 +210,7 @@
 	 (x (car pos))
 	 (y (cadr pos))
 	 ;x and y are now the coordinate of the keeper in s.
-	 (result (list (try-move s 0 x y) (try-move s 1 x y) (try-move s 2 x y) (try-move s 3 x y)))
+	 (result (list (try-move s 0 y x) (try-move s 1 y x) (try-move s 2 y x) (try-move s 3 y x)))
 	 )
     (cleanUpList result);end
    );end let
@@ -245,9 +245,11 @@
 ; It returns the integer content of state S at square (r,c).
 (defun get-square (s r c)
 	; check if it's out of range, return NIL if true
-	(if (or (>= r (length s)) (>= c (length (car s)))) NIL)
-	(if (or (< r 0) (< c 0)) NIL)
-	(car (nthcdr c (car (nthcdr r s)))) ; return the element at r c 
+	(cond
+		((or (>= r (length s)) (>= c (length (car s)))) NIL)
+		((or (< r 0) (< c 0)) NIL)
+		(t (car (nthcdr c (car (nthcdr r s))))); return the element at r c 
+	)
 )
 
 ; replace c's element of the l with v. 
@@ -256,6 +258,7 @@
 	(cond
 		((null l) NIL) ;list is empty 
 		((>= c (length l)) NIL) ;column # is longer than the lenght of the list 
+		((< c 0) NIL)
 		((= c 0) (cons v (nthcdr 1 l))) ; recrusion base case append the element to the rest 
 		(t (cons (first l) (set-column (rest l) (- c 1) v))) ; keep iterating through the list until we reach the goal 
 	)
@@ -265,12 +268,13 @@
 ; a square content v (integer). 
 ; This function should return a new state S’ that is obtained by setting
 ; the square (r,c) to value v.
-(defun set-square (s r c v old-c old-r)
+(defun set-square (s r c v)
 	; check if it's out of range, return NIL if true
 	(cond 
 		((null s) NIL) ;state is empty 
 		((>= r (length s)) NIL) ;row # is longer than the lenght of the state
 		((>= c (length (car s))) NIL) ;column # is longer than the lenght of the list 
+		((or (< r 0) (< c 0)) NIL) 
 		((= r 0) (cons (set-column (car s) c v) (nthcdr 1 s))) ; recrusion base case append the element to the rest 
 		(t (cons (first s) (set-square (rest s) (- r 1) c v))) ; keep iterating through the list until we reach the goal 
 	)
@@ -281,7 +285,7 @@
 (defun valid-basic-move (curr-element)
 	(cond 
 		; return NIL if next move is invalid 
-		((not curr-element) NIL) 
+		((not curr-element) NIL)
 		; check if it's a wall, return NIL if true
 		((isWall curr-element) NIL)
 		; check if it's BLANK/GOAL, return t if true
@@ -303,24 +307,45 @@
 	)
 )
 
+; helper function for setting the first square to its original statu 
+; keeper+ goal -> goal 
+; Keeper  -> blank
+(defun keeper_set_back (s r c)
+	(let 
+		((keeper-element (get-square s r c)))
+		(cond 
+			((isKeeper keeper-element) (set-square s r c blank))
+			((isKeeperStar keeper-element) (set-square s r c star))
+			(t NIL) ;this should not be executed 
+		)
+	)
+)
 
+; helper function for setting the second square to its new statu
+; blank -> keeper
+; star -> keeperstar
+(defun set_to_keeper (s r c old-r old-c)
+	(let 
+		((curr-element (get-square s r c)))
+		(cond ;if it is a valid move 
+			;if next is blank (Box is only valid when valid-move is in box section) USE Inheritance maybe?
+			((or (isBlank curr-element) (isBox curr-element)) (set-square (keeper_set_back s old-r old-c) r c keeper))
+			;if next is goal/star (Boxstar is only valid when valid-move is in box section) USE Inheritance maybe?
+			((or (isStar curr-element) (isBoxStar curr-element)) (set-square (keeper_set_back s old-r old-c) r c keeperstar))
+			(t NIL) ;this step should not be executed 
+		)
+	)
+)
 
 ; this functin check if location at r c is a valid space for next state. 
 ; ATTENTION: r c should be the value of the next coordinate 
 ; direction is to help identify the next move direction for the box scenrio 
 (defun valid-move (s r c direction old-r old-c)
 	(let 
-		((curr-element (get-square s r c)))		
+		((curr-element (get-square s r c)))
 		(cond 
-			((valid-basic-move curr-element) 
-				(cond ;if it is a valid move 
-					;if next is blank
-					((isBlank curr-element) (set-square s r c keeper old-c old-r))
-					;if next is goal/star
-					((isStar curr-element) (set-square s r c keeperstar old-c old-r))
-					(t NIL) ;this step should not be executed 
-				)
-			)
+			((not curr-element) NIL) ; out of range, invalid move.
+			((valid-basic-move curr-element)  (set_to_keeper s r c old-r old-c)) ; setting first two elements to their right status
 			; check if it's a BOX/BOX+GOAL, if it is true, check next coordinates in same direction is valid or not.
 			; BLANK/GOAL are valid 
 			; WALL/BOX/BOX+GOAL are invalid 
@@ -328,21 +353,18 @@
 				(let 
 					((next-coordinate (coordinate-direction r c direction))) ; get the coordinate of the square next to the box 
 					(if (not next-coordinate) NIL) ; check if it returns NIL
+					(if (or (< (first next-coordinate) 0) (< (second next-coordinate) 0)) NIL)
 					(let
 						((next-element (get-square s (first next-coordinate) (second next-coordinate)))) ; get the element of the next square 
 						(cond 
 							((valid-basic-move next-element) ; check if it's a space you can move to 
+								;(print next-element)
 								(cond ; if it is 
-									; change first square 
-									; first square is a box 
-									((isBox curr-element) (set-square s r c keeper old-c old-r)) ; set the first square to keeper after move 
-									; first square is a boxstar/boxgoal
-									((isBoxStar curr-element) (set-square s r c keeperstar old-c old-r)) ;set the first square to keeperstar after move 
 									; chagne second square 
 									; second square is a blank
-									((isBlank next-element) (set-square s (first next-coordinate) (second next-coordinate) box old-c old-r))
+									((isBlank next-element) (set-square (set_to_keeper s r c old-r old-c) (first next-coordinate) (second next-coordinate) box))
 									; second square is a star/goal
-									((isStar next-element) (set-square s (first next-coordinate) (second next-coordinate) boxstar old-c old-r))
+									((isStar next-element) (set-square (set_to_keeper s r c old-r old-c) (first next-coordinate) (second next-coordinate) boxstar))
 									(t NIL) ; this line should not be executed 
 								)
 							) 
@@ -359,15 +381,26 @@
 
 ; EXERCISE: Modify this function to compute the trivial 
 ; admissible heuristic.
-;
+; It returns 0 as document required. 
 (defun h0 (s)
-  )
+	0
+)
 
 ; EXERCISE: Modify this function to compute the 
 ; number of misplaced boxes in s.
-;
+; This function use recrusion to find the number of Box in the list. It checks on every atom's nubmer. 
+; it is admissible heuristic b/c it never overestimates the number of misplaced boxes. 
 (defun h1 (s)
-  )
+	(cond
+		((null s) 0)
+		((atom s)
+			(cond
+				((isBox s) 1)
+				(t 0)
+		))
+		(t (+ (h1 (first s)) (h1 (rest s))))
+	)
+)
 
 ; EXERCISE: Change the name of this function to h<UID> where
 ; <UID> is your actual student ID number. Then, modify this 
@@ -379,7 +412,8 @@
 ; running time of a function call.
 ;
 (defun h904801945 (s)
-  )
+	
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -483,10 +517,10 @@
 
 ;(?)
 (setq p11 '((0 0 1 0 0 0 0)
-	    (0 2 1 4 0  0)
-	    (0 2 0 4 0 0 0)	   
-	    (3 2 1 1 1 4 0)
-	    (0 0 1 4 0 0 0)))
+    (0 2 1 4 0 4 0)
+    (0 2 0 4 0 0 0)    
+    (3 2 1 1 1 4 0)
+    (0 0 1 4 0 0 0)))
 
 ;(?)
 (setq p12 '((1 1 1 1 1 0 0 0)
