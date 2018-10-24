@@ -490,7 +490,7 @@
 ; The Lisp 'time' function can be used to measure the 
 ; running time of a function call.
 ; 
-; This heruristic functions calculate the sum of distance between each box and its nearest goal
+; This heruristic functions calculate the sum of distance between each box and its nearest goal + the sum distance between keeper and boxes
 (defun h904801945 (s)
 	(+ 
 		(+ (sum_smallest_distance (find_ele s 2 0 0) (find_ele s 4 0 0)))  
