@@ -472,6 +472,7 @@
 (defun sum_smallest_distance (boxes goals)
 	(cond 
 		((null boxes) 0) ; base case for the recursion 
+		((null goals) 0) 
 		(t (+ (smallest_distance_between (first boxes) goals NIL) (sum_smallest_distance (rest boxes) goals))) ;add all smallest distance together 
 		; for every box, check its distance between it and all goals 
 	)
@@ -491,7 +492,10 @@
 ; 
 ; This heruristic functions calculate the sum of distance between each box and its nearest goal
 (defun h904801945 (s)
-	(+ (sum_smallest_distance (find_ele s 2 0 0) (find_ele s 4 0 0)))
+	(+ 
+		(+ (sum_smallest_distance (find_ele s 2 0 0) (find_ele s 4 0 0)))  
+		(sum_smallest_distance (find_ele s 3 0 0) (find_ele s 2 0 0))
+	)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
