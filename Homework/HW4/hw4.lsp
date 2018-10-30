@@ -6,12 +6,15 @@
 ; delta: propositional sentence in CNF 
 (defun sat? (n delta)
     (let*
-        ((variable_list (update_vlist_freq (initialize_nlist n) delta)))
+        ((variable_list (update_vlist_freq (initialize_nlist n) delta))
         ;(curr_shortest_clause_list (find_shortest_clause delta))
         ;(curr_mfreq_var (find_most_freq_var variable_list (second curr_shortest_clause_list))))
         ;(sat_helper n delta variable_list 0 '() '() delta T)
-        (sat_helper n delta variable_list)
-
+        (result (sat_helper n delta variable_list)))
+        (cond 
+            ((not result) NIL)
+            (t (convert_result result))
+        )
     )
 )
 
@@ -32,8 +35,8 @@
                 )
                 ;(print curr_mfreq_var) 
                 (cond 
-                    ((not (null v_t)) ( convert_result v_t))
-                    ((not (null v_n)) ( convert_result v_n))
+                    ((not (null v_t)) v_t)
+                    ((not (null v_n)) v_n)
                     (t nil)
                 )
             )
