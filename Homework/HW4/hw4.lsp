@@ -32,8 +32,8 @@
                 )
                 (print curr_mfreq_var) 
                 (cond 
-                    ((not (null v_t)) (convert_result v_t))
-                    ((not (null v_n)) (convert_result v_n))
+                    ((not (null v_t)) v_t)
+                    ((not (null v_n)) v_n)
                     (t nil)
                 )
             )
