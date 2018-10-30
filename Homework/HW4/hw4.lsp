@@ -7,9 +7,6 @@
 (defun sat? (n delta)
     (let*
         ((variable_list (update_vlist_freq (initialize_nlist n) delta))
-        ;(curr_shortest_clause_list (find_shortest_clause delta))
-        ;(curr_mfreq_var (find_most_freq_var variable_list (second curr_shortest_clause_list))))
-        ;(sat_helper n delta variable_list 0 '() '() delta T)
         (result (sat_helper n delta variable_list)))
         (cond 
             ((not result) NIL)
@@ -18,6 +15,7 @@
     )
 )
 
+; DFS + forward searching 
 (defun sat_helper (n delta variable_list) 
     ;(print delta)
     ;(print variable_list)
@@ -44,6 +42,7 @@
     )
 )   
 
+; check if the list contain any unassigned value 
 (defun check_vlist (variable_list)
     (cond 
         ((null variable_list) t)
@@ -113,9 +112,9 @@
         ((= num 1) (cons updated_value (rest variable_list)))
         (t (cons (first variable_list) (replace_var  (rest variable_list) ( - num 1) updated_value)))
     )
-
 )
 
+; delete the select clause from the list 
 (defun delete_clause (delta num)
     (cond 
         ((= num 0))
@@ -189,6 +188,7 @@
 ; ========================= Helper Function ============================
 ; ========================= for easy recrusion =========================
 
+; helper function for finding shortest clause 
 (defun find_shortest_clause_helper (delta min_length min_clause min_index current_index)
     (cond 
         ((equal T (first delta)) (find_shortest_clause_helper (rest delta) min_length min_clause min_index (+ current_index 1)))
@@ -198,6 +198,7 @@
     )
 )
 
+; helper function for updating frequencey 
 (defun update_clause_freq (clause variable_list)
     (cond
         ((null clause) variable_list)
@@ -205,6 +206,7 @@
     )
 )
 
+; helper function for finding the most frequence variable 
 (defun find_most_freq_var_core (variable_list counter current_max max_index length)
     ;(print variable_list)
     ;(print current_max)
@@ -219,6 +221,7 @@
     )
 )
 
+; helper function for converting the result from T NIL list to 1 -2 .. list 
 (defun convert_result_helper (variable_list count)
     (cond
         ((atom variable_list)
