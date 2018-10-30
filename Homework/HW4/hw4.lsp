@@ -17,7 +17,7 @@
 
 (defun sat_helper (n delta variable_list) 
     ;(print delta)
-    (print variable_list)
+    ;(print variable_list)
     (if (not (check_delta delta variable_list))
         NIL
         (if (check_vlist variable_list)
@@ -30,10 +30,10 @@
                 (v_t (sat_helper n delta variable_list_T) )
                 (v_n (sat_helper n delta variable_list_Nil) )
                 )
-                (print curr_mfreq_var) 
+                ;(print curr_mfreq_var) 
                 (cond 
-                    ((not (null v_t)) v_t)
-                    ((not (null v_n)) v_n)
+                    ((not (null v_t)) ( convert_result v_t))
+                    ((not (null v_n)) ( convert_result v_n))
                     (t nil)
                 )
             )
