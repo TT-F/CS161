@@ -16,13 +16,15 @@
         ;(get_var (replace_var variable_list curr_mfreq_var T) curr_mfreq_var)
         ;(check_delta delta (replace_var variable_list curr_mfreq_var T))
         ;(check_invalid_delta (check_delta delta (replace_var variable_list curr_mfreq_var T)))
-        (sat_helper n delta variable_list 0)
+        (sat_helper n delta variable_list 0 '() '() delta T)
     )
 )
 
-(defun sat_helper (n updated_delta updated_variable_list update_count)
-    (print update_count)
-    (print updated_variable_list)
+(defun sat_helper (n updated_delta updated_variable_list update_count bt_vlist bt_dlist delta next-state)
+    ;(print update_count)
+    ;(print updated_variable_list)
+    ;(print bt_vlist)
+    ;(print bt_dlist)
     (if (= update_count (length updated_variable_list)) ; if all variables have been assigned 
         (if (not (check_invalid_delta (check_delta updated_delta updated_variable_list))) ;first if then
             (convert_result updated_variable_list) ; Then -> OUTPUT the final RESULT 
@@ -32,15 +34,40 @@
             ((new_variable_list updated_variable_list)
             (curr_shortest_clause_list (find_shortest_clause updated_delta))
             (curr_mfreq_var (find_most_freq_var new_variable_list (second curr_shortest_clause_list))))
-            (if (not (check_invalid_delta (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var T))))
-                (sat_helper n (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var T)) (replace_var new_variable_list curr_mfreq_var T) (+ update_count 1)) ;then
-                (if (not (check_invalid_delta (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var NIL))))
-                    (sat_helper n (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var NIL)) (replace_var new_variable_list curr_mfreq_var NIL) (+ update_count 1))
+            (if (not (check_invalid_delta (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var next-state))))
+                (sat_helper n (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var next-state)) 
+                                (replace_var new_variable_list curr_mfreq_var next-state) 
+                                (+ update_count 1)
+                                (cons curr_mfreq_var bt_vlist)
+                                (cons (+ (third curr_shortest_clause_list) 1) bt_dlist)
+                                delta
+                                next-state
+                                ) ;then
+                (if (not (check_invalid_delta (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var (not next-state)))))
+                    (sat_helper n (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var (not next-state))) 
+                                (replace_var new_variable_list curr_mfreq_var (not next-state)) 
+                                (+ update_count 1)
+                                (cons curr_mfreq_var bt_vlist)
+                                (cons (+ (third curr_shortest_clause_list) 1) bt_dlist)
+                                delta
+                                next-state
+                                )
+                    ; backtrack
+                    (sat_helper n (replace_delta updated_delta (first bt_dlist) (first bt_dlist) delta) 
+                                    (replace_var updated_variable_list (abs_value (first bt_vlist)) 3)
+                                    update_count
+                                    (rest bt_vlist) 
+                                    (rest bt_dlist)
+                                    delta
+                                    (not next-state)
+                    )            
                 )
             )
         )
     ) ; first if
 )
+
+
 
 ; intialize a list with size n to 0
 (defun initialize_nlist (n)
@@ -104,6 +131,16 @@
         (t (cons (first variable_list) (replace_var  (rest variable_list) ( - num 1) updated_value)))
     )
 
+)
+
+(defun replace_delta (new_delta num get_num old_delta)
+    (cond
+        ((null new_delta) (print "replace_delta 'new_delta' is empty") NIL)
+        ((> num (length new_delta)) (print "replace_delta 'num' is larger then the list's length") NIL)
+        ((< num 1) (print "replace_delta 'num' is negative") NIL)
+        ((= num 1) (cons (get_var old_delta get_num) (rest new_delta)))
+        (t (cons (first new_delta) (replace_delta  (rest new_delta) ( - num 1) get_num old_delta)))
+    )   
 )
 
 ; function for finding the __FIRST__ shortest clause
