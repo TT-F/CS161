@@ -6,68 +6,48 @@
 ; delta: propositional sentence in CNF 
 (defun sat? (n delta)
     (let*
-        ((variable_list (update_vlist_freq (initialize_nlist n) delta))
-        (curr_shortest_clause_list (find_shortest_clause delta))
-        (curr_mfreq_var (find_most_freq_var variable_list (second curr_shortest_clause_list))))
-        (print variable_list)
-        (print curr_shortest_clause_list)
-        (print curr_mfreq_var)
-        
-        ;(get_var (replace_var variable_list curr_mfreq_var T) curr_mfreq_var)
-        ;(check_delta delta (replace_var variable_list curr_mfreq_var T))
-        ;(check_invalid_delta (check_delta delta (replace_var variable_list curr_mfreq_var T)))
-        (sat_helper n delta variable_list 0 '() '() delta T)
+        ((variable_list (update_vlist_freq (initialize_nlist n) delta)))
+        ;(curr_shortest_clause_list (find_shortest_clause delta))
+        ;(curr_mfreq_var (find_most_freq_var variable_list (second curr_shortest_clause_list))))
+        ;(sat_helper n delta variable_list 0 '() '() delta T)
+        (sat_helper n delta variable_list)
+
     )
 )
 
-(defun sat_helper (n updated_delta updated_variable_list update_count bt_vlist bt_dlist delta next-state)
-    ;(print update_count)
-    ;(print updated_variable_list)
-    ;(print bt_vlist)
-    ;(print bt_dlist)
-    (if (= update_count (length updated_variable_list)) ; if all variables have been assigned 
-        (if (not (check_invalid_delta (check_delta updated_delta updated_variable_list))) ;first if then
-            (convert_result updated_variable_list) ; Then -> OUTPUT the final RESULT 
-            (print "BT 1");(NIL) ; Else ;BACKTRACK 
-        ) ; second if 
-        (let*
-            ((new_variable_list updated_variable_list)
-            (curr_shortest_clause_list (find_shortest_clause updated_delta))
-            (curr_mfreq_var (find_most_freq_var new_variable_list (second curr_shortest_clause_list))))
-            (if (not (check_invalid_delta (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var next-state))))
-                (sat_helper n (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var next-state)) 
-                                (replace_var new_variable_list curr_mfreq_var next-state) 
-                                (+ update_count 1)
-                                (cons curr_mfreq_var bt_vlist)
-                                (cons (+ (third curr_shortest_clause_list) 1) bt_dlist)
-                                delta
-                                next-state
-                                ) ;then
-                (if (not (check_invalid_delta (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var (not next-state)))))
-                    (sat_helper n (check_delta updated_delta (replace_var new_variable_list curr_mfreq_var (not next-state))) 
-                                (replace_var new_variable_list curr_mfreq_var (not next-state)) 
-                                (+ update_count 1)
-                                (cons curr_mfreq_var bt_vlist)
-                                (cons (+ (third curr_shortest_clause_list) 1) bt_dlist)
-                                delta
-                                next-state
-                                )
-                    ; backtrack
-                    (sat_helper n (replace_delta updated_delta (first bt_dlist) (first bt_dlist) delta) 
-                                    (replace_var updated_variable_list (abs_value (first bt_vlist)) 3)
-                                    update_count
-                                    (rest bt_vlist) 
-                                    (rest bt_dlist)
-                                    delta
-                                    (not next-state)
-                    )            
+(defun sat_helper (n delta variable_list) 
+    ;(print delta)
+    (print variable_list)
+    (if (not (check_delta delta variable_list))
+        NIL
+        (if (check_vlist variable_list)
+            variable_list
+            (let* 
+                (
+                (curr_mfreq_var (find_most_freq_var variable_list))
+                (variable_list_T (replace_var variable_list curr_mfreq_var T))
+                (variable_list_Nil (replace_var variable_list curr_mfreq_var NIL))
+                (v_t (sat_helper n delta variable_list_T) )
+                (v_n (sat_helper n delta variable_list_Nil) )
+                )
+                (print curr_mfreq_var) 
+                (cond 
+                    ((not (null v_t)) v_t)
+                    ((not (null v_n)) v_n)
+                    (t nil)
                 )
             )
         )
-    ) ; first if
+    )
+)   
+
+(defun check_vlist (variable_list)
+    (cond 
+        ((null variable_list) t)
+        ((numberp (first variable_list)) nil)
+        (t (check_vlist (rest variable_list)))
+    )
 )
-
-
 
 ; intialize a list with size n to 0
 (defun initialize_nlist (n)
@@ -110,10 +90,10 @@
 
 ; find the most frequent value in the given clause
 ; given a list (a clause) return the index
-(defun find_most_freq_var (variable_list clause)
+(defun find_most_freq_var (variable_list)
     (cond 
         ((null variable_list) (print "find_most_freq_var 'variable_list' is empty")NIL)
-        (t (find_most_freq_var_core variable_list clause 0 0))
+        (t (find_most_freq_var_core variable_list (length variable_list) 0 0 (length variable_list)))
     )
 )
 
@@ -133,14 +113,13 @@
 
 )
 
-(defun replace_delta (new_delta num get_num old_delta)
-    (cond
-        ((null new_delta) (print "replace_delta 'new_delta' is empty") NIL)
-        ((> num (length new_delta)) (print "replace_delta 'num' is larger then the list's length") NIL)
-        ((< num 1) (print "replace_delta 'num' is negative") NIL)
-        ((= num 1) (cons (get_var old_delta get_num) (rest new_delta)))
-        (t (cons (first new_delta) (replace_delta  (rest new_delta) ( - num 1) get_num old_delta)))
-    )   
+(defun delete_clause (delta num)
+    (cond 
+        ((= num 0))
+        ((null delta) NIL)
+        ((= num 1) (rest delta))
+        (t (cons (first delta) (delete_clause (rest delta) (- num 1))))
+    )
 )
 
 ; function for finding the __FIRST__ shortest clause
@@ -154,7 +133,6 @@
 )
 
 ; Check this clause is T or not. 
-; If the clause's variables have not been signed yet, return the list
 ; If it is T, return T.
 ; Otherwise, return NIL. 
 (defun check_clause (clause variable_list)  
@@ -165,7 +143,7 @@
             (cond
                 ((equal t (get_var variable_list (abs_value clause))) (cond ((< clause 0) NIL) (t t)))
                 ((equal NIL (get_var variable_list (abs_value clause)))  (cond ((< clause 0) t) (t NIL)))
-                ((numberp (get_var variable_list (abs_value clause))) (list clause))
+                ((numberp (get_var variable_list (abs_value clause))) t)
                 (t (print "check_clause second cond failed"))
             )
         )
@@ -173,21 +151,6 @@
             (cond
                 ((equal t (check_clause (first clause) variable_list)) t)
                 ((equal NIL (check_clause (first clause) variable_list)) (check_clause (rest clause) variable_list))
-                ((listp (check_clause (first clause) variable_list)) 
-                    (cond
-                        ((null (rest clause)) 0)
-                        (t 
-                            (let* ((check_result (check_clause (rest clause) variable_list)))
-                                (cond
-                                    ((equal NIL check_result) 0)
-                                    ((equal t check_result) t)
-                                    ((listp check_result) 0)
-                                    ((= 0 check_result) (check_clause (rest clause) variable_list))
-                                )       
-                            )                    
-                        )
-                    )
-                )
                 (t (print "check_clause third cond failed"))
             )
         )
@@ -197,16 +160,8 @@
 ; Check delta is satisifed or not
 (defun check_delta (delta variable_list)
     (cond
-        ((null delta) NIL)
-        (t (let 
-            ((clause_result (check_clause (first delta) variable_list))) 
-            ;(print clause_result)
-            (cons (cond
-                ((equal clause_result 0) (first delta))
-                (t clause_result)
-            ) (check_delta (rest delta) variable_list))
-        ))
-        ;(t (and (check_clause (first delta) variable_list) (check_delta (rest delta) variable_list)))
+        ((null delta) t)
+        (t (and (check_clause (first delta) variable_list) (check_delta (rest delta) variable_list)))
     )
 )
 
@@ -247,13 +202,17 @@
     )
 )
 
-(defun find_most_freq_var_core (variable_list clause max_index current_max)
-    (cond
-        ((null clause) max_index)
-        ((equal T (get_var variable_list (abs_value (first clause)))) (find_most_freq_var_core variable_list (rest clause) max_index current_max))
-        ((equal NIL (get_var variable_list (abs_value (first clause)))) (find_most_freq_var_core variable_list (rest clause) max_index current_max))
-        ((> (get_var variable_list (abs_value (first clause))) current_max) (find_most_freq_var_core variable_list (rest clause) (abs_value (first clause)) (get_var variable_list (abs_value (first clause))) ))
-        (t (find_most_freq_var_core variable_list (rest clause) max_index current_max))
+(defun find_most_freq_var_core (variable_list counter current_max max_index length)
+    ;(print variable_list)
+    ;(print current_max)
+    ;(print max_index)
+    (if (= counter 0)
+        (+ max_index 1)
+        (if (numberp (first variable_list)) 
+            (if (> (first variable_list) current_max) (find_most_freq_var_core (rest variable_list) (- counter 1) (first variable_list) (- length counter) length)
+            (find_most_freq_var_core (rest variable_list) (- counter 1) current_max max_index length))
+            (find_most_freq_var_core (rest variable_list) (- counter 1) current_max max_index length)
+        )
     )
 )
 
